@@ -6,10 +6,23 @@ const app = express()
 //app routes
 app.use(express.json());
 app.use(require('morgan')('dev'));
-app.post('/api/notes', async (req, res, next) => {});
-app.get('/api/notes', async (req, res, next) => {
-    try{
-        const SQL = `SELECT * from notes ORDER BY created_at DESC;`
+app.post('/api/flavors', async (req, res, next) => {
+    try {
+        const SQL = `
+            INSERT INTO flavors(txt)
+            VALUES($1)
+            RETURNING *
+        `;
+        const response = await client.query(SQL, [req.body.txt]);
+        res.send(response.rows[0]);
+
+    } catch (error) {
+        next(error)
+    }
+});
+app.get('/api/flavors', async (req, res, next) => {
+    try {
+        const SQL = `SELECT * from flavors ORDER BY created_at DESC;`
         const result = await client.query(SQL)
         res.send(result.rows)
 
@@ -17,14 +30,37 @@ app.get('/api/notes', async (req, res, next) => {
         next(error)
     }
 });
-app.put('/api/notes/:id', async (req, res, next) => {});
-app.delete('/api/notes/:id', async (req, res, next) => {});
+app.put('/api/flavors/:id', async (req, res, next) => {
+    try {
+        const SQL = `
+            UPDATE flavors
+            SET txt=$1, ranking=$2, update_at= now()
+            WHERE id=$3 RETURNING *
+        `;
+        const response = await client.query(SQL, [reg.body.ranking, req.params.id]);
+        res.send(response.rows[0]);
+    } catch (error) {
+        next(error)
+    }
+});
+app.delete('/api/flavors/:id', async (req, res, next) => {
+    try {
+        const SQL = `
+        DELETE from flavors
+        WHERE id = $1
+        `;
+        const response = await client.query([req.params.id])
+        res.sendStatus(204)
+    } catch (error) {
+        next(error)
+    }
+});
 
 const init = async () => {
     await client.connect();
     console.log('connected to database')
-    let SQL = `DROP TABLE IF EXISTS notes;
-    CREATE TABLE notes(
+    let SQL = `DROP TABLE IF EXISTS flavors;
+    CREATE TABLE flavors(
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now(),
@@ -33,9 +69,9 @@ const init = async () => {
     );`
     await client.query(SQL)
     console.log('tables created')
-    SQL = ` INSERT INTO notes(txt, ranking) VALUES('learn express', 5);
-    INSERT INTO notes(txt, ranking) VALUES('write SQL queries', 4);
-    INSERT INTO notes(txt, ranking) VALUES('create routes', 2);`;
+    SQL = ` INSERT INTO flavors(txt, ranking) VALUES('vanilla', 1);
+            INSERT INTO flavors(txt, ranking) VALUES('chocolate', 2);
+            INSERT INTO flavors(txt, ranking) VALUES('strawberry', 3);`;
     await client.query(SQL);
     console.log('data seeded');
 
