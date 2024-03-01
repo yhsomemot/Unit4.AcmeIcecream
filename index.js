@@ -9,12 +9,12 @@ app.use(require('morgan')('dev'));
 app.post('/api/flavors', async (req, res, next) => {
     try {
         const SQL = `
-            INSERT INTO flavors(txt)
+            INSERT INTO flavors(name)
             VALUES($1)
             RETURNING *
         `;
-        const response = await client.query(SQL, [req.body.txt]);
-        res.send(response.rows[0]);
+        const result = await client.query(SQL, [req.body.name]);
+        res.send(result.rows[0]);
 
     } catch (error) {
         next(error)
@@ -30,15 +30,26 @@ app.get('/api/flavors', async (req, res, next) => {
         next(error)
     }
 });
+app.get('/api/flavors/:id', async (req, res, next) => {
+    try {
+        const SQL = `SELECT * from flavors WHERE id = $1`
+        const result = await client.query(SQL, [req.params.id])
+        res.send(result.rows)
+
+    } catch (error) {
+        next(error)
+    }
+});
 app.put('/api/flavors/:id', async (req, res, next) => {
     try {
         const SQL = `
             UPDATE flavors
-            SET txt=$1, ranking=$2, update_at= now()
-            WHERE id=$3 RETURNING *
+            SET name=$1, is_favorite=$2, update_at= now()
+            WHERE id=$3 
+            RETURNING *
         `;
-        const response = await client.query(SQL, [reg.body.ranking, req.params.id]);
-        res.send(response.rows[0]);
+        const result = await client.query(SQL, [req.params.id, req.body.is_favorite, req.body.name]);
+        res.send(result.rows[0]);
     } catch (error) {
         next(error)
     }
@@ -49,7 +60,7 @@ app.delete('/api/flavors/:id', async (req, res, next) => {
         DELETE from flavors
         WHERE id = $1
         `;
-        const response = await client.query([req.params.id])
+        const result = await client.query(SQL, [req.params.id])
         res.sendStatus(204)
     } catch (error) {
         next(error)
@@ -62,16 +73,16 @@ const init = async () => {
     let SQL = `DROP TABLE IF EXISTS flavors;
     CREATE TABLE flavors(
     id SERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    is_favorite BOOLEAN DEFAULT false,
     created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now(),
-    ranking INTEGER DEFAULT 3 NOT NULL,
-    txt VARCHAR(255) NOT NULL
+    updated_at TIMESTAMP DEFAULT now()
     );`
     await client.query(SQL)
     console.log('tables created')
-    SQL = ` INSERT INTO flavors(txt, ranking) VALUES('vanilla', 1);
-            INSERT INTO flavors(txt, ranking) VALUES('chocolate', 2);
-            INSERT INTO flavors(txt, ranking) VALUES('strawberry', 3);`;
+    SQL = ` INSERT INTO flavors(name) VALUES('vanilla');
+            INSERT INTO flavors(name) VALUES('chocolate');
+            INSERT INTO flavors(name, is_favorite) VALUES('strawberry', true);`;
     await client.query(SQL);
     console.log('data seeded');
 
