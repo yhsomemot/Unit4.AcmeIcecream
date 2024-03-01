@@ -44,11 +44,11 @@ app.put('/api/flavors/:id', async (req, res, next) => {
     try {
         const SQL = `
             UPDATE flavors
-            SET name=$1, is_favorite=$2, update_at= now()
+            SET name=$1, is_favorite=$2, updated_at=now()
             WHERE id=$3 
             RETURNING *
         `;
-        const result = await client.query(SQL, [req.params.id, req.body.is_favorite, req.body.name]);
+        const result = await client.query(SQL, [req.body.name, req.body.is_favorite, req.params.id]);
         res.send(result.rows[0]);
     } catch (error) {
         next(error)
