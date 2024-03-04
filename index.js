@@ -30,6 +30,7 @@ app.get('/api/flavors', async (req, res, next) => {
         next(error)
     }
 });
+
 app.get('/api/flavors/:id', async (req, res, next) => {
     try {
         const SQL = `SELECT * from flavors WHERE id = $1`
